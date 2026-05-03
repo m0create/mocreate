@@ -2,13 +2,15 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Repository Status
+## Project
 
-This is a new, empty repository. No source code, build system, dependencies, or tooling have been added yet. The only file is `README.md`.
+A zero-dependency browser clock (`index.html`) that tells time through icons:
 
-## Getting Started
+- **Central icon** – one of 24 clock-face emoji (🕐–🕛 on the hour, 🕜–🕧 on the half-hour) matching the current hour and whether the minute is before or after :30.
+- **Minute ring** – SVG ring of 60 markers. Quarter-hour positions (0, 15, 30, 45) are rendered as diamond shapes; 5-minute marks as circles; individual minutes as small circles. Past minutes glow blue, the current minute glows red with a soft halo.
+- **Period icon** – emoji reflecting time of day: 🌙 night → 🌅 dawn → ☀️ day → 🌤️ midday → 🌆/🌇 evening.
+- **Day icon** – planetary day symbols (☀️ Sun, 🌙 Mon, 🔥 Tue, 💧 Wed, ⚡ Thu, 💫 Fri, 🪐 Sat).
 
-When the project is initialized, update this file with:
-- Build, lint, and test commands
-- How to run a single test
-- Architecture overview and key conventions
+## Running
+
+Open `index.html` directly in a browser — no build step, no server, no dependencies.
