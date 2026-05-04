@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Icon Clock</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0d0d1a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+
+        .clock {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.75rem;
+        }
+
+        .ring-wrap {
+            position: relative;
+            width: 320px;
+            height: 320px;
+        }
+
+        #ring {
+            width: 320px;
+            height: 320px;
+        }
+
+        .face-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 7rem;
+            line-height: 1;
+            user-select: none;
+            filter: drop-shadow(0 0 28px rgba(100, 120, 255, 0.55));
+            transition: filter 0.4s ease;
+        }
+
+        .time-line {
+            display: flex;
+            align-items: baseline;
+            gap: 0.6rem;
+        }
+
+        .digits {
+            font-size: 3rem;
+            font-weight: 200;
+            letter-spacing: 0.12em;
+            color: #c8c8e8;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .secs {
+            font-size: 1.3rem;
+            font-weight: 300;
+            color: #44447a;
+            letter-spacing: 0.08em;
+            font-variant-numeric: tabular-nums;
+            min-width: 2.8ch;
+        }
+
+        .period-icon {
+            font-size: 2rem;
+            line-height: 1;
+        }
+
+        .date-line {
+            font-size: 0.78rem;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: #3a3a62;
+        }
+    </style>
+</head>
+<body>
+
+<div class="clock">
+    <div class="ring-wrap">
+        <svg id="ring" viewBox="0 0 320 320"></svg>
+        <div class="face-icon" id="faceIcon">🕛</div>
+    </div>
+
+    <div class="time-line">
+        <span class="digits" id="digits">12:00</span>
+        <span class="secs"   id="secs">:00</span>
+        <span class="period-icon" id="periodIcon">🌙</span>
+    </div>
+
+    <div class="date-line" id="dateLine"></div>
+</div>
+
+<script>
+    // 24 clock-face emoji: index by [hour 1–12][0=on-hour, 1=half-past]
+    const FACES = [
+        null,
+        ['🕐','🕜'], ['🕑','🕝'], ['🕒','🕞'], ['🕓','🕟'],
+        ['🕔','🕠'], ['🕕','🕡'], ['🕖','🕢'], ['🕗','🕣'],
+        ['🕘','🕤'], ['🕙','🕥'], ['🕚','🕦'], ['🕛','🕧'],
+    ];
+
+    // Icon representing the time of day
+    function periodIcon(h) {
+        if (h < 5)  return '🌙';
+        if (h < 8)  return '🌅';
+        if (h < 12) return '☀️';
+        if (h < 14) return '🌤️';
+        if (h < 18) return '☀️';
+        if (h < 20) return '🌆';
+        if (h < 22) return '🌇';
+        return '🌙';
+    }
+
+    // Planetary day icons (Sun=Sun, Mon=Moon, Tue=Mars fire, Wed=Mercury water,
+    // Thu=Jupiter bolt, Fri=Venus rings, Sat=Saturn)
+    const DAY_ICONS  = ['☀️','🌙','🔥','💧','⚡','💫','🪐'];
+    const DAY_NAMES  = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const MON_NAMES  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+    const CX = 160, CY = 160, RING_R = 140;
+
+    function minutePos(i) {
+        const a = (i / 60) * 2 * Math.PI - Math.PI / 2;
+        return [CX + RING_R * Math.cos(a), CY + RING_R * Math.sin(a)];
+    }
+
+    function buildRing(m) {
+        let svg = '';
+
+        for (let i = 0; i < 60; i++) {
+            const [x, y] = minutePos(i);
+            const past    = i < m;
+            const curr    = i === m;
+            const isCard  = i % 15 === 0;   // 0, 15, 30, 45 – diamond markers
+            const isFive  = i % 5  === 0;   // 5-minute tick
+
+            // Size
+            let r;
+            if      (isCard) r = curr ? 8   : past ? 6   : 5;
+            else if (isFive) r = curr ? 6   : past ? 4   : 3;
+            else             r = curr ? 4.5 : past ? 2.5 : 1.8;
+
+            // Colour
+            const fill = curr ? '#ff6478' : past ? '#5a78ff' : '#252548';
+
+            // Opacity
+            let op;
+            if (curr) op = 1;
+            else if (past) op = isCard ? 1 : isFive ? 0.85 : 0.65;
+            else           op = isCard ? 0.55 : isFive ? 0.35 : 0.22;
+
+            if (isCard) {
+                // Rotated square = diamond  →  icon-style quarter markers
+                const d = r * 1.3;
+                svg += `<rect x="${f(x - d/2)}" y="${f(y - d/2)}" width="${d}" height="${d}"
+                              fill="${fill}" opacity="${op}"
+                              transform="rotate(45 ${f(x)} ${f(y)})"/>`;
+            } else {
+                svg += `<circle cx="${f(x)}" cy="${f(y)}" r="${r}"
+                               fill="${fill}" opacity="${op}"/>`;
+            }
+
+            // Soft halo on the current minute
+            if (curr) {
+                svg += `<circle cx="${f(x)}" cy="${f(y)}" r="${r * 3}"
+                               fill="#ff6478" opacity="0.12"/>`;
+            }
+        }
+
+        return svg;
+    }
+
+    function f(n) { return n.toFixed(1); }
+
+    function tick() {
+        const now = new Date();
+        const h = now.getHours();
+        const m = now.getMinutes();
+        const s = now.getSeconds();
+        const h12 = h % 12 || 12;
+
+        document.getElementById('faceIcon').textContent  = FACES[h12][m >= 30 ? 1 : 0];
+        document.getElementById('digits').textContent    = `${h12}:${pad(m)}`;
+        document.getElementById('secs').textContent      = `:${pad(s)}`;
+        document.getElementById('periodIcon').textContent = periodIcon(h);
+        document.getElementById('dateLine').textContent  =
+            `${DAY_ICONS[now.getDay()]}  ${DAY_NAMES[now.getDay()]} · ${MON_NAMES[now.getMonth()]} ${now.getDate()}`;
+
+        document.getElementById('ring').innerHTML = buildRing(m);
+    }
+
+    function pad(n) { return String(n).padStart(2, '0'); }
+
+    tick();
+    setInterval(tick, 1000);
+</script>
+
+</body>
+</html>
